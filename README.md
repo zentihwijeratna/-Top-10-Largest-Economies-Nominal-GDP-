@@ -59,18 +59,6 @@ gdp-data-extractor/
 └── .gitignore
 ```
 
-## Visualization
-
-The project includes an optional visualization script (`data_visualization.py`) that creates:
-- Bar chart of top 10 economies
-- Pie chart showing GDP distribution
-- GDP comparison charts
-
-To run visualizations:
-```bash
-python data_visualization.py
-```
-
 ## Technical Details
 
 ### Data Processing Steps:
