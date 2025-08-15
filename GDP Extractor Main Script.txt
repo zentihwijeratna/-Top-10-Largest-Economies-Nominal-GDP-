@@ -1,0 +1,150 @@
+"""
+World's Largest Economies Data Extractor
+
+This script extracts GDP data from Wikipedia's "List of countries by GDP (nominal)" 
+page and processes it into a clean CSV format showing the top 10 economies.
+
+Author: Zenith 
+Date: 16th August 2025
+"""
+
+import pandas as pd
+import numpy as np
+import warnings
+from typing import Optional
+import sys
+import os
+
+def suppress_warnings():
+    """Suppress pandas and other warnings for cleaner output."""
+    def warn(*args, **kwargs):
+        pass
+    
+    warnings.warn = warn
+    warnings.filterwarnings('ignore')
+
+def extract_gdp_data(url: str) -> Optional[pd.DataFrame]:
+    """
+    Extract GDP data from Wikipedia page.
+    
+    Args:
+        url (str): URL of the Wikipedia page
+        
+    Returns:
+        pd.DataFrame: Extracted table data or None if failed
+    """
+    try:
+        print("Extracting tables from Wikipedia...")
+        tables = pd.read_html(url)
+        print(f"Found {len(tables)} tables on the page.")
+        
+        # Use table index 3 (4th table) as it contains the main GDP data
+        df = tables[3]
+        print("Successfully extracted GDP table.")
+        return df
+        
+    except Exception as e:
+        print(f"Error extracting data: {e}")
+        print("Please check your internet connection and required dependencies.")
+        return None
+
+def clean_gdp_data(df: pd.DataFrame) -> pd.DataFrame:
+    """
+    Clean and process the GDP data.
+    
+    Args:
+        df (pd.DataFrame): Raw extracted data
+        
+    Returns:
+        pd.DataFrame: Cleaned and processed data
+    """
+    print("Cleaning and processing data...")
+    
+    # Reset column names to numeric indices
+    df.columns = range(df.shape[1])
+    
+    # Select relevant columns (Country and GDP)
+    df = df[[0, 2]]  # Column 0: Country, Column 2: GDP
+    
+    # Select top 10 countries (skip header row)
+    df = df.iloc[1:11, :]
+    
+    # Set proper column names
+    df.columns = ['Country', 'GDP (Million USD)']
+    
+    # Convert GDP to numeric (remove commas and convert to int)
+    df['GDP (Million USD)'] = df['GDP (Million USD)'].astype(int)
+    
+    # Convert from millions to billions
+    df['GDP (Million USD)'] = df['GDP (Million USD)'] / 1000
+    
+    # Round to 2 decimal places
+    df['GDP (Million USD)'] = np.round(df['GDP (Million USD)'], 2)
+    
+    # Rename column to reflect billions
+    df = df.rename(columns={'GDP (Million USD)': 'GDP (Billion USD)'})
+    
+    print("Data cleaning completed.")
+    return df
+
+def save_to_csv(df: pd.DataFrame, filename: str = './Largest_economies.csv') -> bool:
+    """
+    Save DataFrame to CSV file.
+    
+    Args:
+        df (pd.DataFrame): Data to save
+        filename (str): Output filename
+        
+    Returns:
+        bool: True if successful, False otherwise
+    """
+    try:
+        df.to_csv(filename, index=False)
+        print(f"Data saved to {filename}")
+        print(f"File location: {os.path.abspath(filename)}")
+        return True
+    except Exception as e:
+        print(f"Error saving file: {e}")
+        return False
+
+def display_results(df: pd.DataFrame):
+    """Display the processed data."""
+    print("\n" + "="*50)
+    print("TOP 10 WORLD'S LARGEST ECONOMIES")
+    print("="*50)
+    print(df.to_string(index=False))
+    print("="*50)
+    print(f"Total GDP of top 10: ${df['GDP (Billion USD)'].sum():,.2f} Billion USD")
+
+def main():
+    """Main function to orchestrate the data extraction and processing."""
+    print("World's Largest Economies Data Extractor")
+    print("="*50)
+    
+    # Suppress warnings
+    suppress_warnings()
+    
+    # Wikipedia URL (archived version for consistency)
+    URL = "https://web.archive.org/web/20230902185326/https://en.wikipedia.org/wiki/List_of_countries_by_GDP_%28nominal%29"
+    
+    # Extract data
+    raw_data = extract_gdp_data(URL)
+    if raw_data is None:
+        print("Failed to extract data. Exiting...")
+        sys.exit(1)
+    
+    # Clean data
+    processed_data = clean_gdp_data(raw_data)
+    
+    # Display results
+    display_results(processed_data)
+    
+    # Save to CSV
+    success = save_to_csv(processed_data)
+    if success:
+        print("\nProcess completed successfully!")
+    else:
+        print("\nProcess completed with errors in saving.")
+
+if __name__ == "__main__":
+    main()
